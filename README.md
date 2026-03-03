@@ -25,18 +25,24 @@ cd extract-xiso
 ./install.sh
 ```
 
-**On Windows**, use [WSL](https://docs.microsoft.com/en-us/windows/wsl/install) (Windows Subsystem for Linux), then run:
-```
-./install.sh
-```
+**On Windows (native)**, double‑click **install.bat** or run it from Command Prompt in the project folder. It creates a virtual environment (`.venv`) and installs dependencies. No admin rights needed.
 
-> ☕ This takes 1-2 minutes. It automatically installs everything needed and builds the tool.
+**On Windows (WSL)**, you can instead use Linux: run `./install.sh` inside WSL.
+
+> ☕ This takes 1–2 minutes. It installs everything needed and optionally builds the C tool if CMake is available.
 
 ### Step 3 — Open the app
 
+**Mac / Linux / WSL:**
 ```
 python3 gui/app.py
 ```
+
+**Windows (after install.bat):**
+```
+run.bat
+```
+Or: `.venv\Scripts\python.exe gui\app.py`
 
 Your browser will open automatically at **http://localhost:7860** 🎉
 
@@ -68,13 +74,26 @@ An Xbox ISO (`.iso` file) is a copy of an original Xbox game disc. This tool hel
 
 ## 🛠️ Requirements
 
-- **Python 3.8 or newer** — [Download here](https://www.python.org/downloads/)
-- **A terminal** — Terminal on Mac/Linux, or WSL on Windows
-- **cmake + gcc** — The installer handles this automatically
+- **Python 3.8 or newer** — [Download here](https://www.python.org/downloads/) (on Windows, tick “Add Python to PATH”)
+- **pip** — Provided by the installers (`install.sh` / `install.bat`) or your OS package manager
+- **Windows:** `install.bat` creates a `.venv` in the project and does not require admin. Optional: **CMake** + **Visual Studio Build Tools** to build `extract-xiso.exe`; otherwise the GUI still runs and you can use a pre-built binary.
+- **Mac/Linux:** `install.sh` uses system Python; **cmake** + **gcc**/Clang for building the C binary
 
 ---
 
 ## 🐛 Something not working?
+
+**"Missing Python dependencies" / "No module named pip"**
+→ Your Python has no pip or the GUI deps aren’t installed. Install them:
+
+On **Ubuntu/Debian/WSL**:
+```bash
+sudo apt-get update && sudo apt-get install -y python3-pip
+pip install -r gui/requirements.txt
+# or from repo root:
+pip install -r gui/requirements.txt
+```
+Then run `python3 gui/app.py` again.
 
 **"install.sh: permission denied"**
 ```
@@ -85,7 +104,13 @@ chmod +x install.sh && ./install.sh
 → [Download Python](https://www.python.org/downloads/) and install it first.
 
 **"Binary not found" warning in the app**
-→ The installer didn't finish building. Run `./install.sh` again.
+→ The C binary wasn’t built. Run `./install.sh` again (Mac/Linux/WSL), or on Windows run `install.bat` with CMake and Visual Studio Build Tools installed, or download a release that includes `extract-xiso.exe`.
+
+**Windows: "Python not found" when running install.bat**
+→ Install Python from [python.org](https://www.python.org/downloads/) and check **“Add Python to PATH”**. Then run `install.bat` again.
+
+**Windows: "Run install.bat first" when running run.bat**
+→ Double‑click `install.bat` once to create the `.venv` and install dependencies; then use `run.bat` to start the app.
 
 **Port 7860 already in use**
 ```

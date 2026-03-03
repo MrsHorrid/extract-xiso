@@ -28,11 +28,42 @@ def _ensure_deps() -> None:
             __import__(pkg)
         except ImportError:
             missing.append(pkg.replace("_", "-"))
-    if missing:
-        print(f"[setup] Installing: {', '.join(missing)}")
-        subprocess.check_call(
-            [sys.executable, "-m", "pip", "install", "--quiet"] + missing
+    if not missing:
+        return
+    # Try pip install only if pip is available
+    try:
+        subprocess.run(
+            [sys.executable, "-m", "pip", "--version"],
+            capture_output=True,
+            check=True,
         )
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        _bail_missing_deps(missing, pip_available=False)
+        return
+    print(f"[setup] Installing: {', '.join(missing)}")
+    r = subprocess.run(
+        [sys.executable, "-m", "pip", "install", "--quiet"] + missing,
+        capture_output=True,
+        text=True,
+    )
+    if r.returncode != 0:
+        print(r.stderr or r.stdout or "pip install failed")
+        _bail_missing_deps(missing, pip_available=True)
+
+def _bail_missing_deps(missing: list[str], pip_available: bool) -> None:
+    req = Path(__file__).resolve().parent / "requirements.txt"
+    print("\n[ERROR] Missing Python dependencies:", ", ".join(missing))
+    print("\nInstall them manually:")
+    if req.exists():
+        print(f"  pip install -r {req}")
+    else:
+        print("  pip install flask flask-cors werkzeug")
+    if not pip_available:
+        print("\nIf pip is not installed (e.g. Ubuntu/WSL):")
+        print("  sudo apt-get update && sudo apt-get install -y python3-pip")
+        print("  pip install -r gui/requirements.txt")
+    print()
+    sys.exit(1)
 
 _ensure_deps()
 
@@ -41,7 +72,7 @@ from flask_cors import CORS
 from werkzeug.utils import secure_filename
 
 # ── Constants ─────────────────────────────────────────────────────────────────
-VERSION = "2.7.1"
+VERSION = "2.8.1"
 PORT = 7860
 MAX_CONTENT_LENGTH = 8 * 1024 * 1024 * 1024  # 8 GB
 TEMP_DIR = Path(tempfile.gettempdir()) / "extract-xiso-gui"
@@ -85,6 +116,8 @@ def find_binary() -> Optional[str]:
     candidates = [
         repo_root / "build" / "extract-xiso",
         repo_root / "build" / "extract-xiso.exe",
+        repo_root / "build" / "Release" / "extract-xiso.exe",
+        repo_root / "build" / "Debug" / "extract-xiso.exe",
         repo_root / "extract-xiso",
         repo_root / "extract-xiso.exe",
         Path("build") / "extract-xiso",
@@ -373,10 +406,13 @@ def api_extract():
     out_dir = TEMP_DIR / f"extract_{uuid.uuid4()}"
     out_dir.mkdir(parents=True, exist_ok=True)
 
+    skip_sysupdate = request.form.get("skip_sysupdate", "false").lower() == "true"
     job_id, _ = new_job()
 
     def worker():
         cmd = [BINARY, str(iso_path), "-d", str(out_dir)]
+        if skip_sysupdate:
+            cmd.append("-s")
         rc, lines = run_command(cmd, job_id)
         # Gather file list from output dir
         extracted = []
@@ -448,11 +484,20 @@ def api_create():
     else:
         return jsonify({"error": "Provide folder_zip file or folder_path form field"}), 400
 
-    out_iso = TEMP_DIR / f"{secure_filename(src_dir.name or 'output')}.iso"
+    output_name = request.form.get("output_name", "").strip()
+    if not output_name:
+        output_name = f"{src_dir.name or 'output'}.iso"
+    elif not output_name.lower().endswith(".iso"):
+        output_name = f"{output_name}.iso"
+    out_iso = TEMP_DIR / secure_filename(output_name)
+    no_patch = request.form.get("no_patch", "false").lower() == "true"
     job_id, _ = new_job()
 
     def worker():
         cmd = [BINARY, "-c", str(src_dir), str(out_iso)]
+        if no_patch:
+            cmd.insert(1, "-m")
+        rc, lines = run_command(cmd, job_id)
         rc, lines = run_command(cmd, job_id)
         if rc == 0 and out_iso.exists():
             sz = out_iso.stat().st_size
@@ -530,12 +575,15 @@ def api_rewrite():
     out_dir.mkdir(parents=True, exist_ok=True)
 
     delete_original = request.form.get("delete_original", "false").lower() == "true"
+    skip_sysupdate = request.form.get("skip_sysupdate", "false").lower() == "true"
     job_id, _ = new_job()
 
     def worker():
         cmd = [BINARY, "-r", str(iso_path), "-d", str(out_dir)]
         if delete_original:
             cmd.append("-D")
+        if skip_sysupdate:
+            cmd.append("-s")
         rc, lines = run_command(cmd, job_id)
 
         # Find rewritten ISO in out_dir

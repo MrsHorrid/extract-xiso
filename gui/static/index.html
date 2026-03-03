@@ -238,6 +238,13 @@
   .tree-item .ti-icon { font-size: 0.95rem; flex-shrink: 0; }
   .tree-item .ti-name { flex: 1; color: var(--text); word-break: break-all; }
   .tree-item .ti-size { color: var(--text3); font-size: 0.75rem; flex-shrink: 0; }
+  .tree-inject-btn {
+    flex-shrink: 0; font-size: 0.7rem; padding: 2px 8px; border-radius: 6px;
+    background: var(--card); border: 1px solid var(--xbox); color: var(--xbox2);
+    cursor: pointer; font-family: var(--font); font-weight: 500;
+    transition: background .2s, box-shadow .2s;
+  }
+  .tree-inject-btn:hover { background: var(--xbox-glow); box-shadow: 0 0 8px var(--xbox-glow); }
   .tree-children { padding-right: 16px; display: none; }
   .tree-children.open { display: block; }
 
@@ -358,6 +365,65 @@
     padding: 7px 12px; background: var(--card2); border-radius: 8px; border: 1px solid var(--border);
   }
   .diff-row.visible { display: block; }
+
+  /* ── Xbox-style 2D scroll animations (respect reduced motion) ── */
+  @media (prefers-reduced-motion: no-preference) {
+    .card {
+      transition: opacity 0.4s ease-out, transform 0.4s ease-out, border-color .3s, box-shadow .3s;
+    }
+    main:not(.loaded) .card,
+    .card:not(.in-view) {
+      opacity: 0;
+      transform: translateY(24px);
+    }
+    main.loaded .card.in-view,
+    .card.in-view {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .card:hover { transform: translateY(-2px); }
+    .card.in-view:hover { transform: translateY(-2px); }
+
+    .adv-divider {
+      transition: opacity 0.4s ease-out, transform 0.4s ease-out;
+    }
+    main:not(.loaded) .adv-divider,
+    .adv-divider:not(.in-view) {
+      opacity: 0;
+      transform: translateX(16px);
+    }
+    main.loaded .adv-divider.in-view,
+    .adv-divider.in-view {
+      opacity: 1;
+      transform: translateX(0);
+    }
+
+    .card:focus-visible,
+    .btn:focus-visible,
+    .theme-btn:focus-visible,
+    .gh-link:focus-visible {
+      outline: 2px solid var(--xbox2);
+      outline-offset: 2px;
+      transition: outline-offset 0.25s ease, box-shadow 0.25s ease;
+    }
+    .card:focus-visible { box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--xbox2); }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      background: linear-gradient(165deg, var(--bg) 0%, var(--card2) 50%, var(--bg) 100%);
+      background-size: 200% 200%;
+      animation: bgShift 18s ease-in-out infinite;
+      opacity: 0.6;
+      pointer-events: none;
+    }
+    @keyframes bgShift {
+      0%, 100% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+    }
+  }
 </style>
 </head>
 <body>
@@ -372,7 +438,7 @@
     <div>
       <div class="header-title">extract-xiso <span>GUI</span></div>
     </div>
-    <span class="version-badge">v2.8.0</span>
+    <span class="version-badge">v2.8.1</span>
   </div>
   <div class="header-right">
     <a href="https://github.com/MrsHorrid/extract-xiso" target="_blank" class="gh-link">
@@ -860,7 +926,7 @@ function toggleOpts(op) {
   document.getElementById(`opts-${op}`).classList.toggle('open');
 }
 
-// ── Legacy runOp (existing 4 cards) ───────────────────────────────────────
+// ── runOp (Extract, Create, List, Rewrite) — SSE progress ─────────────────
 async function runOp(op) {
   const file = files[op];
   if (!file) { toast('Drop a file first!', 'err'); return; }
@@ -871,6 +937,8 @@ async function runOp(op) {
   const pb   = document.getElementById(`pb-${op}`);
   const log  = document.getElementById(`log-${op}`);
   const card = document.getElementById(`card-${op}`);
+  const ft   = document.getElementById(`ft-${op}`);
+  const dl   = document.getElementById(`dl-${op}`);
 
   btn.disabled = true;
   prog.classList.add('visible');
@@ -879,19 +947,15 @@ async function runOp(op) {
   pb.classList.add('indeterminate');
   log.innerHTML = '';
   card.classList.remove('success','error');
-
-  const ft = document.getElementById(`ft-${op}`);
   if (ft) ft.innerHTML = '';
-  const dl = document.getElementById(`dl-${op}`);
   if (dl) dl.innerHTML = '';
 
   const fd = new FormData();
-  fd.append('file', file);
+  if (op === 'create') fd.append('folder_zip', file);
+  else fd.append('iso', file);
 
   if (op === 'extract') {
     fd.append('skip_sysupdate', document.getElementById('opt-extract-skip').checked);
-    const dir = document.getElementById('opt-extract-dir').value.trim();
-    if (dir) fd.append('output_dir', dir);
   }
   if (op === 'create') {
     fd.append('no_patch', document.getElementById('opt-create-nopatch').checked);
@@ -904,36 +968,43 @@ async function runOp(op) {
   }
 
   try {
-    ps.textContent = 'Running…';
     const resp = await fetch(`/api/${op}`, { method: 'POST', body: fd });
     const data = await resp.json();
+    if (!resp.ok || data.error) throw new Error(data.error || 'Operation failed');
+    if (!data.job_id) throw new Error('No job_id returned');
 
-    pb.classList.remove('indeterminate');
-
-    if (!resp.ok || data.error) {
-      throw new Error(data.error || 'Operation failed');
-    }
-
-    if (data.log && data.log.length) {
-      data.log.forEach(line => appendLog(log, line, false));
-    }
-
-    pb.style.width = '100%';
-    ps.textContent = '✓ Done!';
-    ps.className = 'progress-status done';
-    card.classList.add('success');
+    ps.textContent = 'Running…';
+    await new Promise((resolve, reject) => {
+      const es = new EventSource(`/api/progress/${data.job_id}`);
+      es.onmessage = (e) => {
+        const msg = JSON.parse(e.data);
+        if (msg.type === 'ping') return;
+        if (msg.type === 'log') appendLog(log, msg.text, false);
+        else if (msg.type === 'done') {
+          es.close();
+          const result = msg.result || {};
+          if (msg.status === 'error' || !result.success) {
+            reject(new Error(result.error || 'Operation failed'));
+          } else {
+            pb.classList.remove('indeterminate');
+            pb.style.width = '100%';
+            ps.textContent = '✓ Done!';
+            ps.className = 'progress-status done';
+            card.classList.add('success');
+            if ((op === 'extract' || op === 'list') && result.files) {
+              renderTree(ft, result.files, result.total_size, op === 'list' ? { useForInject: true } : null);
+            }
+            if ((op === 'create' || op === 'rewrite') && result.download_url) {
+              const name = result.iso_name || result.download_url.split('/').pop();
+              dl.innerHTML = `<a class="dl-btn" href="${result.download_url}" download>⬇ Download ${name} ${result.iso_size ? '(' + result.iso_size + ')' : ''}</a>`;
+            }
+            resolve(result);
+          }
+        }
+      };
+      es.onerror = () => { es.close(); reject(new Error('Connection lost')); };
+    });
     toast(`✓ ${op} complete!`, 'ok');
-
-    if ((op === 'extract' || op === 'list') && data.files) {
-      renderTree(ft, data.files, data.total_size);
-    }
-
-    if ((op === 'create' || op === 'rewrite') && data.download) {
-      dl.innerHTML = `<a class="dl-btn" href="/api/download/${encodeURIComponent(data.download)}" download>
-        ⬇ Download ${data.download}
-      </a>`;
-    }
-
   } catch(err) {
     pb.classList.remove('indeterminate');
     pb.style.width = '100%';
@@ -1135,12 +1206,14 @@ function appendLog(box, line, isErr) {
 }
 
 // ── File tree renderer ─────────────────────────────────────────────────────
-function renderTree(container, fileList, totalSize) {
+function renderTree(container, fileList, totalSize, options) {
   if (!fileList || !fileList.length) return;
+  const useForInject = options && options.useForInject;
 
+  const sizeStr = typeof totalSize === 'string' ? totalSize : fmtSize(totalSize || 0);
   container.innerHTML = `
     <div class="tree-header">
-      <span>${fileList.length} files — ${fmtSize(totalSize || 0)} total</span>
+      <span>${fileList.length} files — ${sizeStr} total</span>
       <span class="tree-count">${fileList.length}</span>
     </div>
     <div class="tree-body" id="tree-body"></div>`;
@@ -1150,9 +1223,24 @@ function renderTree(container, fileList, totalSize) {
   fileList.slice(0, 500).forEach(f => {
     const div = document.createElement('div');
     div.className = 'tree-item';
-    const ext = (f.name || f.path || '').split('.').pop().toLowerCase();
+    const path = f.path || f.name || '';
+    const ext = path.split('.').pop().toLowerCase();
     const icon = ext === 'xbe' ? '🎮' : ext === 'xbx' ? '📦' : ext === 'wav' || ext === 'mp3' ? '🎵' : ext === 'bik' ? '🎬' : '📄';
-    div.innerHTML = `<span class="ti-icon">${icon}</span><span class="ti-name">${f.path || f.name}</span><span class="ti-size">${fmtSize(f.size || 0)}</span>`;
+    div.innerHTML = `<span class="ti-icon">${icon}</span><span class="ti-name">${esc(path)}</span><span class="ti-size">${fmtSize(f.size || 0)}</span>`;
+    if (useForInject && path && !path.endsWith('/')) {
+      const btn = document.createElement('button');
+      btn.className = 'tree-inject-btn';
+      btn.textContent = 'Use for Inject';
+      btn.title = 'Set as target path in Inject card';
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        document.getElementById('inject-target').value = path;
+        updateInjectDiff();
+        document.getElementById('card-inject').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        toast('Target path set — drop your replacement file', 'ok');
+      };
+      div.appendChild(btn);
+    }
     body.appendChild(div);
   });
 
@@ -1188,6 +1276,57 @@ function fmtSize(bytes) {
 function esc(s) {
   return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
+
+// ── Xbox-style entrance and scroll animations ───────────────────────────────
+(function() {
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+  const main = document.querySelector('main');
+  const cards = document.querySelectorAll('.card');
+  const divider = document.querySelector('.adv-divider');
+  const staggerMs = 50;
+
+  function assignIndices() {
+    var idx = 0;
+    var grids = main.querySelectorAll('.grid');
+    if (grids[0]) grids[0].querySelectorAll('.card').forEach(function(c) { c.dataset.animIndex = String(idx++); });
+    if (divider) divider.dataset.animIndex = String(idx++);
+    if (grids[1]) grids[1].querySelectorAll('.card').forEach(function(c) { c.dataset.animIndex = String(idx++); });
+  }
+
+  function onInView(entries, observer) {
+    entries.forEach(function(entry) {
+      if (!entry.isIntersecting) return;
+      var el = entry.target;
+      el.classList.add('in-view');
+      var i = parseInt(el.dataset.animIndex, 10);
+      if (!isNaN(i)) el.style.transitionDelay = (i * staggerMs) + 'ms';
+      observer.unobserve(el);
+    });
+  }
+
+  assignIndices();
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() {
+      requestAnimationFrame(function() {
+        main.classList.add('loaded');
+      });
+    });
+  } else {
+    requestAnimationFrame(function() {
+      main.classList.add('loaded');
+    });
+  }
+
+  var observer = new IntersectionObserver(onInView, {
+    root: null,
+    rootMargin: '0px 0px -80px 0px',
+    threshold: 0
+  });
+  cards.forEach(function(c) { observer.observe(c); });
+  if (divider) observer.observe(divider);
+})();
 </script>
 </body>
 </html>

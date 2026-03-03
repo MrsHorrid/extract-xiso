@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-project(extract-xiso)
+project(extract-xiso LANGUAGES C)
 
 string(TOUPPER __${CMAKE_SYSTEM_NAME}__ TARGET_OS)
 
