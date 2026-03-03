@@ -70,6 +70,23 @@
   }
   .theme-btn:hover { border-color: var(--xbox); color: var(--xbox2); }
 
+  /* ── Tool status bar ── */
+  .tool-status-bar {
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    padding: 7px 32px; background: var(--card); border-bottom: 1px solid var(--border);
+    font-size: 0.8rem; flex-wrap: wrap;
+  }
+  .tool-status-label { color: var(--text3); font-size: 0.75rem; margin-right: 4px; }
+  .tool-pill {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 3px 12px; border-radius: 20px; font-weight: 500;
+    border: 1px solid var(--border2); transition: all .3s; cursor: default;
+    font-size: 0.78rem;
+  }
+  .tool-pill.ok   { border-color: var(--xbox); color: var(--xbox2); background: rgba(16,124,16,0.12); }
+  .tool-pill.warn { border-color: #f39c12; color: #f39c12; background: rgba(243,156,18,0.1); }
+  .tool-pill.loading { color: var(--text3); }
+
   /* ── Main grid ── */
   main { padding: 32px; max-width: 1280px; margin: 0 auto; }
   .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px; }
@@ -255,6 +272,92 @@
   footer { text-align: center; padding: 32px; color: var(--text3); font-size: 0.82rem; border-top: 1px solid var(--border); margin-top: 40px; }
   footer a { color: var(--xbox2); text-decoration: none; }
   footer a:hover { text-decoration: underline; }
+
+  /* ── Advanced tools divider ── */
+  .adv-divider {
+    text-align: center; padding: 36px 0 20px;
+    color: var(--xbox2); font-size: 0.92rem; font-weight: 600; letter-spacing: 2px;
+  }
+
+  /* ── Format selector ── */
+  .format-selector { margin-bottom: 12px; }
+  .format-label { font-size: 0.75rem; color: var(--text3); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .format-options {
+    display: flex; flex-direction: column; gap: 2px;
+    background: var(--card2); border: 1px solid var(--border); border-radius: 10px; padding: 8px 12px;
+  }
+  .format-options.format-inline { flex-direction: row; flex-wrap: wrap; gap: 2px 16px; }
+  .format-opt {
+    display: flex; align-items: center; gap: 6px; font-size: 0.82rem;
+    color: var(--text2); cursor: pointer; padding: 4px 6px; border-radius: 6px; transition: background .15s;
+  }
+  .format-opt:hover { background: var(--xbox-glow); color: var(--text); }
+  .format-opt input[type="radio"] { accent-color: var(--xbox); cursor: pointer; }
+
+  /* ── Side-by-side drop zones ── */
+  .side-drops { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+  .side-drops .drop-zone { margin-bottom: 0; padding: 20px 10px; }
+  .side-drops .drop-icon { font-size: 1.6rem; margin-bottom: 6px; }
+  .side-drops .drop-text { font-size: 0.82rem; }
+
+  /* ── Text input (standalone) ── */
+  .text-input {
+    background: var(--card); border: 1px solid var(--border2); color: var(--text);
+    border-radius: 8px; padding: 8px 12px; font-size: 0.85rem; font-family: var(--font);
+    outline: none; transition: border-color .2s; width: 100%;
+  }
+  .text-input:focus { border-color: var(--xbox); }
+  .input-row { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+  .input-label { color: var(--text2); font-size: 0.84rem; white-space: nowrap; }
+
+  /* ── Build file list ── */
+  .build-file-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 10px; background: var(--card2); border: 1px solid var(--border);
+    border-radius: 8px; margin-bottom: 6px; font-size: 0.82rem;
+  }
+  .build-file-name { color: var(--text); font-weight: 500; flex-shrink: 0; max-width: 110px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .build-file-size { color: var(--text3); flex-shrink: 0; font-size: 0.74rem; }
+  .build-path-input {
+    flex: 1; background: var(--card); border: 1px solid var(--border2); color: var(--text);
+    border-radius: 6px; padding: 4px 8px; font-size: 0.8rem; font-family: var(--font);
+    outline: none; min-width: 60px;
+  }
+  .build-path-input:focus { border-color: var(--xbox); }
+  .build-remove {
+    background: none; border: none; color: var(--text3); cursor: pointer;
+    font-size: 0.95rem; padding: 0 4px; transition: color .2s; flex-shrink: 0;
+  }
+  .build-remove:hover { color: var(--red); }
+
+  /* ── Toggle row ── */
+  .toggle-row {
+    display: flex; align-items: center; gap: 8px; margin-bottom: 16px;
+    font-size: 0.87rem; color: var(--text2);
+  }
+  .toggle-row input[type="checkbox"] { accent-color: var(--xbox); width: 16px; height: 16px; cursor: pointer; }
+  .toggle-row label { cursor: pointer; }
+  .tooltip-icon {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 16px; height: 16px; border-radius: 50%; background: var(--card2);
+    border: 1px solid var(--border2); font-size: 0.65rem; color: var(--text3);
+    cursor: help; flex-shrink: 0;
+  }
+
+  /* ── Info box ── */
+  .info-box {
+    background: var(--card2); border: 1px solid var(--border2);
+    border-left: 3px solid var(--xbox); border-radius: 8px;
+    padding: 12px 14px; font-size: 0.82rem; color: var(--text2);
+    line-height: 1.5; margin-bottom: 16px;
+  }
+
+  /* ── Diff indicator ── */
+  .diff-row {
+    display: none; font-size: 0.8rem; color: var(--text2); margin-bottom: 12px;
+    padding: 7px 12px; background: var(--card2); border-radius: 8px; border: 1px solid var(--border);
+  }
+  .diff-row.visible { display: block; }
 </style>
 </head>
 <body>
@@ -269,7 +372,7 @@
     <div>
       <div class="header-title">extract-xiso <span>GUI</span></div>
     </div>
-    <span class="version-badge">v2.7.1</span>
+    <span class="version-badge">v2.8.0</span>
   </div>
   <div class="header-right">
     <a href="https://github.com/MrsHorrid/extract-xiso" target="_blank" class="gh-link">
@@ -280,9 +383,18 @@
   </div>
 </header>
 
+<!-- Tool Status Bar -->
+<div class="tool-status-bar">
+  <span class="tool-status-label">Tools:</span>
+  <span class="tool-pill loading" id="pill-extract_xiso">⬜ extract-xiso</span>
+  <span class="tool-pill loading" id="pill-xdvdfs">⬜ xdvdfs</span>
+  <span class="tool-pill loading" id="pill-xgdtool">⬜ XGDTool</span>
+</div>
+
 <!-- Shortcuts hint -->
 <div style="text-align:center;padding:10px 0 0;color:var(--text3);font-size:0.78rem;">
-  <kbd>E</kbd> Extract &nbsp; <kbd>C</kbd> Create &nbsp; <kbd>L</kbd> List &nbsp; <kbd>R</kbd> Rewrite
+  <kbd>E</kbd> Extract &nbsp; <kbd>C</kbd> Create &nbsp; <kbd>L</kbd> List &nbsp; <kbd>R</kbd> Rewrite &nbsp;
+  <kbd>F</kbd> Format &nbsp; <kbd>I</kbd> Inject &nbsp; <kbd>B</kbd> Build &nbsp; <kbd>P</kbd> Patch XBE
 </div>
 
 <!-- Main -->
@@ -430,6 +542,173 @@
     </div>
 
   </div><!-- /grid -->
+
+  <!-- Advanced Tools divider -->
+  <div class="adv-divider">── Advanced Tools ──</div>
+
+  <div class="grid">
+
+    <!-- FORMAT CONVERTER -->
+    <div class="card" id="card-convert">
+      <div class="card-header">
+        <span class="card-emoji">🔄</span>
+        <div><div class="card-title">Format Converter</div></div>
+      </div>
+      <div class="card-desc">Convert between Xbox disc formats. Supports XISO, CCI, CSO, GoD, ZAR and extracted files.</div>
+
+      <div class="drop-zone" id="dz-convert" onclick="document.getElementById('f-convert').click()">
+        <input type="file" id="f-convert" accept=".iso,.cci,.cso,.zar,.zip" onchange="onFileSelect('convert',this)"/>
+        <span class="drop-icon">💿</span>
+        <div class="drop-text">Drag & drop Xbox image or <strong>click to browse</strong></div>
+        <div class="drop-file-name" id="fn-convert"></div>
+      </div>
+
+      <div class="format-selector">
+        <div class="format-label">Output format</div>
+        <div class="format-options">
+          <label class="format-opt"><input type="radio" name="conv-format" value="xiso" checked> 🎮 XISO — standard Xbox ISO</label>
+          <label class="format-opt"><input type="radio" name="conv-format" value="cci"> 💿 CCI — compressed, great for OG Xbox</label>
+          <label class="format-opt"><input type="radio" name="conv-format" value="cso"> 💨 CSO — smallest size, for Project Stellar</label>
+          <label class="format-opt"><input type="radio" name="conv-format" value="god"> 🗂 GoD — Games on Demand format</label>
+          <label class="format-opt"><input type="radio" name="conv-format" value="zar"> 📦 ZAR — archive format</label>
+          <label class="format-opt"><input type="radio" name="conv-format" value="extract"> 📁 Extract — just extract the files</label>
+        </div>
+      </div>
+
+      <div class="format-selector" style="margin-top:10px;">
+        <div class="format-label">Target machine</div>
+        <div class="format-options format-inline">
+          <label class="format-opt"><input type="radio" name="conv-target" value="og_xbox" checked> 🟢 OG Xbox</label>
+          <label class="format-opt"><input type="radio" name="conv-target" value="xemu"> 🔵 xemu</label>
+          <label class="format-opt"><input type="radio" name="conv-target" value="xenia"> 🟣 Xenia</label>
+          <label class="format-opt"><input type="radio" name="conv-target" value="xbox360"> ⚪ Xbox 360</label>
+        </div>
+      </div>
+
+      <div class="format-selector" style="margin-top:10px;margin-bottom:16px;">
+        <div class="format-label">Scrub</div>
+        <div class="format-options format-inline">
+          <label class="format-opt"><input type="radio" name="conv-scrub" value="none" checked> No scrub</label>
+          <label class="format-opt"><input type="radio" name="conv-scrub" value="partial"> Partial (remove padding)</label>
+          <label class="format-opt"><input type="radio" name="conv-scrub" value="full"> Full reauthor (smallest)</label>
+        </div>
+      </div>
+
+      <button class="btn" onclick="runConvert()" id="btn-convert">▶ Convert</button>
+      <div class="progress-wrap" id="prog-convert">
+        <div class="progress-status" id="ps-convert">Working…</div>
+        <div class="progress-bar-outer"><div class="progress-bar-inner indeterminate" id="pb-convert"></div></div>
+        <div class="log-box" id="log-convert"></div>
+        <div id="dl-convert"></div>
+      </div>
+    </div>
+
+    <!-- FILE INJECTOR -->
+    <div class="card" id="card-inject">
+      <div class="card-header">
+        <span class="card-emoji">💉</span>
+        <div><div class="card-title">Inject Files</div></div>
+      </div>
+      <div class="card-desc">Replace or add files inside an Xbox ISO without fully repacking. Perfect for modding.</div>
+
+      <div class="side-drops">
+        <div class="drop-zone" id="dz-inject-iso" onclick="document.getElementById('f-inject-iso').click()">
+          <input type="file" id="f-inject-iso" accept=".iso" onchange="onInjectFile('iso',this)"/>
+          <span class="drop-icon">📀</span>
+          <div class="drop-text"><strong>Drop your ISO</strong></div>
+          <div class="drop-file-name" id="fn-inject-iso"></div>
+        </div>
+        <div class="drop-zone" id="dz-inject-repl" onclick="document.getElementById('f-inject-repl').click()">
+          <input type="file" id="f-inject-repl" onchange="onInjectFile('repl',this)"/>
+          <span class="drop-icon">📄</span>
+          <div class="drop-text"><strong>Drop replacement</strong></div>
+          <div class="drop-file-name" id="fn-inject-repl"></div>
+        </div>
+      </div>
+
+      <div class="input-row">
+        <span class="input-label">Target path:</span>
+        <input type="text" id="inject-target" class="text-input" placeholder="e.g. default.xbe" oninput="updateInjectDiff()"/>
+      </div>
+
+      <div class="diff-row" id="inject-diff">
+        Replacing: <span id="inject-diff-text" style="color:var(--xbox2);"></span>
+      </div>
+
+      <button class="btn" onclick="runInject()" id="btn-inject">▶ Inject &amp; Download</button>
+      <div class="progress-wrap" id="prog-inject">
+        <div class="progress-status" id="ps-inject">Working…</div>
+        <div class="progress-bar-outer"><div class="progress-bar-inner indeterminate" id="pb-inject"></div></div>
+        <div class="log-box" id="log-inject"></div>
+        <div id="dl-inject"></div>
+      </div>
+    </div>
+
+    <!-- BUILD CUSTOM ISO -->
+    <div class="card" id="card-build">
+      <div class="card-header">
+        <span class="card-emoji">🔨</span>
+        <div><div class="card-title">Build Custom ISO</div></div>
+      </div>
+      <div class="card-desc">Create an Xbox ISO from scratch. Upload your files and define where they go inside the image.</div>
+
+      <div class="drop-zone" id="dz-build" onclick="document.getElementById('f-build').click()" style="margin-bottom:12px;">
+        <input type="file" id="f-build" multiple onchange="onBuildFiles(this)"/>
+        <span class="drop-icon">📂</span>
+        <div class="drop-text">Drag & drop files or <strong>click to browse</strong> (multiple OK)</div>
+      </div>
+
+      <div id="build-file-list"></div>
+
+      <div class="toggle-row">
+        <input type="checkbox" id="build-xbe-patch" checked/>
+        <label for="build-xbe-patch">XBE Media Patch</label>
+        <span class="tooltip-icon" title="Modifies the allowed media types in .xbe executables so your Xbox loads the game from any source.">ℹ</span>
+      </div>
+
+      <button class="btn" onclick="runBuild()" id="btn-build">▶ Build ISO</button>
+      <div class="progress-wrap" id="prog-build">
+        <div class="progress-status" id="ps-build">Working…</div>
+        <div class="progress-bar-outer"><div class="progress-bar-inner indeterminate" id="pb-build"></div></div>
+        <div class="log-box" id="log-build"></div>
+        <div id="dl-build"></div>
+      </div>
+    </div>
+
+    <!-- XBE MEDIA PATCHER -->
+    <div class="card" id="card-patchxbe">
+      <div class="card-header">
+        <span class="card-emoji">🩹</span>
+        <div><div class="card-title">XBE Media Patcher</div></div>
+      </div>
+      <div class="card-desc">Patch a .xbe executable to run from backup/HDD. Required for some BIOSes.</div>
+
+      <div class="drop-zone" id="dz-patchxbe" onclick="document.getElementById('f-patchxbe').click()">
+        <input type="file" id="f-patchxbe" accept=".xbe" onchange="onFileSelect('patchxbe',this)"/>
+        <span class="drop-icon">🎮</span>
+        <div class="drop-text">Drag & drop <strong>.xbe</strong> file or <strong>click to browse</strong></div>
+        <div class="drop-file-name" id="fn-patchxbe"></div>
+      </div>
+
+      <div class="info-box">
+        The media patch modifies the allowed media types in the XBE header so your modded Xbox will load the game from any source. It sets bit 3 (0x08) of the media flags at offset 0x118.
+      </div>
+
+      <div class="diff-row" id="patchxbe-flags">
+        Media flags: <span id="patchxbe-before" style="font-family:monospace;"></span>
+        → <span id="patchxbe-after" style="color:var(--xbox2);font-family:monospace;"></span>
+      </div>
+
+      <button class="btn" onclick="runPatchXbe()" id="btn-patchxbe">▶ Patch &amp; Download</button>
+      <div class="progress-wrap" id="prog-patchxbe">
+        <div class="progress-status" id="ps-patchxbe">Working…</div>
+        <div class="progress-bar-outer"><div class="progress-bar-inner indeterminate" id="pb-patchxbe"></div></div>
+        <div class="log-box" id="log-patchxbe"></div>
+        <div id="dl-patchxbe"></div>
+      </div>
+    </div>
+
+  </div><!-- /advanced grid -->
 </main>
 
 <footer>
@@ -442,7 +721,10 @@
 
 <script>
 // ── State ──────────────────────────────────────────────────────────────────
-const files = { extract: null, create: null, list: null, rewrite: null };
+const files = { extract: null, create: null, list: null, rewrite: null, convert: null, patchxbe: null };
+let injectIso  = null;
+let injectRepl = null;
+let buildFiles = []; // [{file, path}]
 
 // ── Theme ──────────────────────────────────────────────────────────────────
 const themeBtn = document.getElementById('themeBtn');
@@ -455,17 +737,47 @@ function applyTheme() {
 themeBtn.onclick = () => { dark = !dark; applyTheme(); };
 applyTheme();
 
+// ── Tool status ────────────────────────────────────────────────────────────
+async function fetchToolStatus() {
+  try {
+    const resp = await fetch('/api/tools');
+    const data = await resp.json();
+    const names = { extract_xiso: 'extract-xiso', xdvdfs: 'xdvdfs', xgdtool: 'XGDTool' };
+    Object.entries(data).forEach(([key, ok]) => {
+      const pill = document.getElementById(`pill-${key}`);
+      if (!pill) return;
+      pill.classList.remove('loading');
+      if (ok) {
+        pill.classList.add('ok');
+        pill.textContent = `🟢 ${names[key]}`;
+        pill.title = `${names[key]} is available`;
+      } else {
+        pill.classList.add('warn');
+        pill.textContent = `🟡 ${names[key]} (not found)`;
+        pill.title = `${names[key]} not found — run ./install.sh to install`;
+      }
+    });
+  } catch(e) {
+    console.warn('Could not fetch tool status', e);
+  }
+}
+fetchToolStatus();
+
 // ── Keyboard shortcuts ─────────────────────────────────────────────────────
 document.addEventListener('keydown', e => {
-  if (e.target.tagName === 'INPUT') return;
-  const map = { e: 'extract', c: 'create', l: 'list', r: 'rewrite' };
-  const op = map[e.key.toLowerCase()];
-  if (op) document.getElementById(`dz-${op}`).click();
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+  const key = e.key.toLowerCase();
+  const directMap = { e: 'extract', c: 'create', l: 'list', r: 'rewrite', f: 'convert', p: 'patchxbe' };
+  const op = directMap[key];
+  if (op) { const dz = document.getElementById(`dz-${op}`); if (dz) dz.click(); }
+  if (key === 'i') { const dz = document.getElementById('dz-inject-iso'); if (dz) dz.click(); }
+  if (key === 'b') { const dz = document.getElementById('dz-build'); if (dz) dz.click(); }
 });
 
-// ── Drag & drop ────────────────────────────────────────────────────────────
-['extract','create','list','rewrite'].forEach(op => {
+// ── Drag & drop — standard ops ────────────────────────────────────────────
+['extract','create','list','rewrite','convert','patchxbe'].forEach(op => {
   const dz = document.getElementById(`dz-${op}`);
+  if (!dz) return;
   dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag-over'); });
   dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
   dz.addEventListener('drop', e => {
@@ -475,6 +787,39 @@ document.addEventListener('keydown', e => {
   });
 });
 
+// ── Drag & drop — inject ISO ──────────────────────────────────────────────
+const dzInjectIso = document.getElementById('dz-inject-iso');
+dzInjectIso.addEventListener('dragover', e => { e.preventDefault(); dzInjectIso.classList.add('drag-over'); });
+dzInjectIso.addEventListener('dragleave', () => dzInjectIso.classList.remove('drag-over'));
+dzInjectIso.addEventListener('drop', e => {
+  e.preventDefault(); dzInjectIso.classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file) { injectIso = file; document.getElementById('fn-inject-iso').textContent = `📀 ${file.name}`; toast(`✓ ${file.name} loaded`, 'ok'); }
+});
+
+// ── Drag & drop — inject replacement ──────────────────────────────────────
+const dzInjectRepl = document.getElementById('dz-inject-repl');
+dzInjectRepl.addEventListener('dragover', e => { e.preventDefault(); dzInjectRepl.classList.add('drag-over'); });
+dzInjectRepl.addEventListener('dragleave', () => dzInjectRepl.classList.remove('drag-over'));
+dzInjectRepl.addEventListener('drop', e => {
+  e.preventDefault(); dzInjectRepl.classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file) { injectRepl = file; document.getElementById('fn-inject-repl').textContent = `📄 ${file.name} (${fmtSize(file.size)})`; updateInjectDiff(); toast(`✓ ${file.name} loaded`, 'ok'); }
+});
+
+// ── Drag & drop — build custom ────────────────────────────────────────────
+const dzBuild = document.getElementById('dz-build');
+dzBuild.addEventListener('dragover', e => { e.preventDefault(); dzBuild.classList.add('drag-over'); });
+dzBuild.addEventListener('dragleave', () => dzBuild.classList.remove('drag-over'));
+dzBuild.addEventListener('drop', e => {
+  e.preventDefault(); dzBuild.classList.remove('drag-over');
+  const added = [...e.dataTransfer.files];
+  added.forEach(f => buildFiles.push({ file: f, path: f.name }));
+  renderBuildFileList();
+  toast(`✓ Added ${added.length} file(s)`, 'ok');
+});
+
+// ── File selection helpers ─────────────────────────────────────────────────
 function onFileSelect(op, input) {
   if (input.files[0]) setFile(op, input.files[0]);
 }
@@ -484,22 +829,47 @@ function setFile(op, file) {
   toast(`✓ ${file.name} loaded`, 'ok');
 }
 
-// ── Options toggle ─────────────────────────────────────────────────────────
-function toggleOpts(op) {
-  const el = document.getElementById(`opts-${op}`);
-  el.classList.toggle('open');
+function onInjectFile(which, input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (which === 'iso') {
+    injectIso = file;
+    document.getElementById('fn-inject-iso').textContent = `📀 ${file.name}`;
+  } else {
+    injectRepl = file;
+    document.getElementById('fn-inject-repl').textContent = `📄 ${file.name} (${fmtSize(file.size)})`;
+  }
+  updateInjectDiff();
+  toast(`✓ ${file.name} loaded`, 'ok');
 }
 
-// ── Run operation ──────────────────────────────────────────────────────────
+function updateInjectDiff() {
+  const tp = document.getElementById('inject-target').value.trim();
+  const diff = document.getElementById('inject-diff');
+  const dt   = document.getElementById('inject-diff-text');
+  if (injectRepl && tp) {
+    diff.classList.add('visible');
+    dt.textContent = `${tp} → ${injectRepl.name} (${fmtSize(injectRepl.size)})`;
+  } else {
+    diff.classList.remove('visible');
+  }
+}
+
+// ── Options toggle ─────────────────────────────────────────────────────────
+function toggleOpts(op) {
+  document.getElementById(`opts-${op}`).classList.toggle('open');
+}
+
+// ── Legacy runOp (existing 4 cards) ───────────────────────────────────────
 async function runOp(op) {
   const file = files[op];
   if (!file) { toast('Drop a file first!', 'err'); return; }
 
-  const btn = document.getElementById(`btn-${op}`);
+  const btn  = document.getElementById(`btn-${op}`);
   const prog = document.getElementById(`prog-${op}`);
-  const ps = document.getElementById(`ps-${op}`);
-  const pb = document.getElementById(`pb-${op}`);
-  const log = document.getElementById(`log-${op}`);
+  const ps   = document.getElementById(`ps-${op}`);
+  const pb   = document.getElementById(`pb-${op}`);
+  const log  = document.getElementById(`log-${op}`);
   const card = document.getElementById(`card-${op}`);
 
   btn.disabled = true;
@@ -510,7 +880,6 @@ async function runOp(op) {
   log.innerHTML = '';
   card.classList.remove('success','error');
 
-  // Clear previous results
   const ft = document.getElementById(`ft-${op}`);
   if (ft) ft.innerHTML = '';
   const dl = document.getElementById(`dl-${op}`);
@@ -519,7 +888,6 @@ async function runOp(op) {
   const fd = new FormData();
   fd.append('file', file);
 
-  // Options
   if (op === 'extract') {
     fd.append('skip_sysupdate', document.getElementById('opt-extract-skip').checked);
     const dir = document.getElementById('opt-extract-dir').value.trim();
@@ -546,7 +914,6 @@ async function runOp(op) {
       throw new Error(data.error || 'Operation failed');
     }
 
-    // Show log lines
     if (data.log && data.log.length) {
       data.log.forEach(line => appendLog(log, line, false));
     }
@@ -557,12 +924,10 @@ async function runOp(op) {
     card.classList.add('success');
     toast(`✓ ${op} complete!`, 'ok');
 
-    // File tree for extract/list
     if ((op === 'extract' || op === 'list') && data.files) {
       renderTree(ft, data.files, data.total_size);
     }
 
-    // Download for create/rewrite
     if ((op === 'create' || op === 'rewrite') && data.download) {
       dl.innerHTML = `<a class="dl-btn" href="/api/download/${encodeURIComponent(data.download)}" download>
         ⬇ Download ${data.download}
@@ -581,6 +946,183 @@ async function runOp(op) {
   } finally {
     btn.disabled = false;
   }
+}
+
+// ── SSE-based advanced operation runner ───────────────────────────────────
+async function runAdvancedOp(endpoint, formData, ids, onSuccess) {
+  const { btnId, progId, psId, pbId, logId, dlId, cardId } = ids;
+  const btn  = document.getElementById(btnId);
+  const prog = document.getElementById(progId);
+  const ps   = document.getElementById(psId);
+  const pb   = document.getElementById(pbId);
+  const log  = document.getElementById(logId);
+  const dl   = document.getElementById(dlId);
+  const card = document.getElementById(cardId);
+
+  btn.disabled = true;
+  prog.classList.add('visible');
+  ps.textContent = 'Uploading…';
+  ps.className = 'progress-status';
+  pb.classList.add('indeterminate');
+  log.innerHTML = '';
+  if (dl) dl.innerHTML = '';
+  card.classList.remove('success', 'error');
+
+  try {
+    const resp = await fetch(endpoint, { method: 'POST', body: formData });
+    const data = await resp.json();
+    if (!resp.ok || data.error) throw new Error(data.error || 'Server error');
+
+    const { job_id } = data;
+    ps.textContent = 'Running…';
+
+    await new Promise((resolve, reject) => {
+      const es = new EventSource(`/api/progress/${job_id}`);
+      es.onmessage = (e) => {
+        const msg = JSON.parse(e.data);
+        if (msg.type === 'ping') return;
+        if (msg.type === 'log') {
+          appendLog(log, msg.text, false);
+        } else if (msg.type === 'done') {
+          es.close();
+          const result = msg.result || {};
+          if (msg.status === 'error' || !result.success) {
+            reject(new Error(result.error || 'Operation failed'));
+          } else {
+            pb.classList.remove('indeterminate');
+            pb.style.width = '100%';
+            ps.textContent = '✓ Done!';
+            ps.className = 'progress-status done';
+            card.classList.add('success');
+            if (onSuccess) onSuccess(result);
+            resolve(result);
+          }
+        }
+      };
+      es.onerror = () => { es.close(); reject(new Error('Connection lost')); };
+    });
+
+    toast('✓ Done!', 'ok');
+  } catch(err) {
+    pb.classList.remove('indeterminate');
+    pb.style.width = '100%';
+    pb.style.background = 'var(--red)';
+    ps.textContent = `✗ ${err.message}`;
+    ps.className = 'progress-status err';
+    card.classList.add('error');
+    appendLog(log, err.message, true);
+    toast(`✗ ${err.message}`, 'err');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+// ── Format Converter ──────────────────────────────────────────────────────
+function runConvert() {
+  const file = files.convert;
+  if (!file) { toast('Drop a file first!', 'err'); return; }
+  const fmt    = document.querySelector('input[name="conv-format"]:checked')?.value || 'xiso';
+  const target = document.querySelector('input[name="conv-target"]:checked')?.value || '';
+  const scrub  = document.querySelector('input[name="conv-scrub"]:checked')?.value  || 'none';
+  const fd = new FormData();
+  fd.append('file', file);
+  fd.append('output_format', fmt);
+  fd.append('target', target);
+  fd.append('scrub', scrub);
+  runAdvancedOp('/api/convert', fd,
+    { btnId:'btn-convert', progId:'prog-convert', psId:'ps-convert', pbId:'pb-convert', logId:'log-convert', dlId:'dl-convert', cardId:'card-convert' },
+    (result) => {
+      if (result.download_url) {
+        document.getElementById('dl-convert').innerHTML =
+          `<a class="dl-btn" href="${result.download_url}" download>⬇ Download ${result.filename} (${result.size})</a>`;
+      }
+    }
+  );
+}
+
+// ── File Injector ─────────────────────────────────────────────────────────
+function runInject() {
+  if (!injectIso)  { toast('Drop an ISO file!', 'err'); return; }
+  if (!injectRepl) { toast('Drop a replacement file!', 'err'); return; }
+  const tp = document.getElementById('inject-target').value.trim();
+  if (!tp) { toast('Enter a target path!', 'err'); return; }
+  const fd = new FormData();
+  fd.append('iso', injectIso);
+  fd.append('replacement', injectRepl);
+  fd.append('target_path', tp);
+  runAdvancedOp('/api/inject', fd,
+    { btnId:'btn-inject', progId:'prog-inject', psId:'ps-inject', pbId:'pb-inject', logId:'log-inject', dlId:'dl-inject', cardId:'card-inject' },
+    (result) => {
+      document.getElementById('dl-inject').innerHTML =
+        `<a class="dl-btn" href="${result.download_url}" download>⬇ Download ${result.filename} (${result.size})</a>`;
+    }
+  );
+}
+
+// ── Build Custom ISO ──────────────────────────────────────────────────────
+function onBuildFiles(input) {
+  for (const file of input.files) {
+    buildFiles.push({ file, path: file.name });
+  }
+  renderBuildFileList();
+  toast(`✓ Added ${input.files.length} file(s)`, 'ok');
+  input.value = '';
+}
+
+function removeBuildFile(idx) {
+  buildFiles.splice(idx, 1);
+  renderBuildFileList();
+}
+
+function renderBuildFileList() {
+  const list = document.getElementById('build-file-list');
+  if (!buildFiles.length) { list.innerHTML = ''; return; }
+  list.innerHTML = buildFiles.map((f, i) => `
+    <div class="build-file-row">
+      <span class="build-file-name" title="${esc(f.file.name)}">${esc(f.file.name)}</span>
+      <span class="build-file-size">${fmtSize(f.file.size)}</span>
+      <input class="build-path-input" value="${esc(f.path)}" placeholder="path in ISO"
+        oninput="buildFiles[${i}].path=this.value"/>
+      <button class="build-remove" onclick="removeBuildFile(${i})" title="Remove">✕</button>
+    </div>`).join('');
+}
+
+function runBuild() {
+  if (!buildFiles.length) { toast('Add some files first!', 'err'); return; }
+  const xbePatch = document.getElementById('build-xbe-patch').checked;
+  const fd = new FormData();
+  const paths = [];
+  buildFiles.forEach(f => { fd.append('files', f.file); paths.push(f.path); });
+  fd.append('filenames', JSON.stringify(paths));
+  fd.append('xbe_patch', xbePatch);
+  runAdvancedOp('/api/build-custom', fd,
+    { btnId:'btn-build', progId:'prog-build', psId:'ps-build', pbId:'pb-build', logId:'log-build', dlId:'dl-build', cardId:'card-build' },
+    (result) => {
+      document.getElementById('dl-build').innerHTML =
+        `<a class="dl-btn" href="${result.download_url}" download>⬇ Download ${result.filename} (${result.size})</a>`;
+    }
+  );
+}
+
+// ── XBE Media Patcher ─────────────────────────────────────────────────────
+function runPatchXbe() {
+  const file = files.patchxbe;
+  if (!file) { toast('Drop a .xbe file first!', 'err'); return; }
+  const fd = new FormData();
+  fd.append('file', file);
+  runAdvancedOp('/api/patch-xbe', fd,
+    { btnId:'btn-patchxbe', progId:'prog-patchxbe', psId:'ps-patchxbe', pbId:'pb-patchxbe', logId:'log-patchxbe', dlId:'dl-patchxbe', cardId:'card-patchxbe' },
+    (result) => {
+      if (result.old_flags) {
+        const fRow = document.getElementById('patchxbe-flags');
+        fRow.classList.add('visible');
+        document.getElementById('patchxbe-before').textContent = result.old_flags;
+        document.getElementById('patchxbe-after').textContent  = result.new_flags;
+      }
+      document.getElementById('dl-patchxbe').innerHTML =
+        `<a class="dl-btn" href="${result.download_url}" download>⬇ Download ${result.filename}</a>`;
+    }
+  );
 }
 
 // ── Log append ─────────────────────────────────────────────────────────────
@@ -605,11 +1147,10 @@ function renderTree(container, fileList, totalSize) {
 
   const body = container.querySelector('.tree-body');
 
-  // Build simple flat list (tree building would require backend structure)
   fileList.slice(0, 500).forEach(f => {
     const div = document.createElement('div');
     div.className = 'tree-item';
-    const ext = (f.name || '').split('.').pop().toLowerCase();
+    const ext = (f.name || f.path || '').split('.').pop().toLowerCase();
     const icon = ext === 'xbe' ? '🎮' : ext === 'xbx' ? '📦' : ext === 'wav' || ext === 'mp3' ? '🎵' : ext === 'bik' ? '🎬' : '📄';
     div.innerHTML = `<span class="ti-icon">${icon}</span><span class="ti-name">${f.path || f.name}</span><span class="ti-size">${fmtSize(f.size || 0)}</span>`;
     body.appendChild(div);
@@ -642,6 +1183,10 @@ function fmtSize(bytes) {
   let i = 0;
   while (bytes >= 1024 && i < units.length-1) { bytes /= 1024; i++; }
   return `${bytes.toFixed(i?1:0)} ${units[i]}`;
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 </script>
 </body>

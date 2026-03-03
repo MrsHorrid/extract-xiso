@@ -95,7 +95,6 @@ def find_binary() -> Optional[str]:
         if c.exists() and os.access(str(c), os.X_OK):
             return str(c)
 
-    # Check system PATH
     found = shutil.which("extract-xiso")
     if found:
         return found
@@ -103,7 +102,52 @@ def find_binary() -> Optional[str]:
     return None
 
 
+def find_xdvdfs() -> Optional[str]:
+    """Find the xdvdfs binary."""
+    script_dir = Path(__file__).resolve().parent
+    repo_root = script_dir.parent
+
+    candidates = [
+        repo_root / "bin" / "xdvdfs",
+        repo_root / "bin" / "xdvdfs.exe",
+        Path.home() / ".cargo" / "bin" / "xdvdfs",
+        Path.home() / ".cargo" / "bin" / "xdvdfs.exe",
+    ]
+    for c in candidates:
+        if c.exists() and os.access(str(c), os.X_OK):
+            return str(c)
+
+    found = shutil.which("xdvdfs")
+    if found:
+        return found
+
+    return None
+
+
+def find_xgdtool() -> Optional[str]:
+    """Find the XGDTool binary."""
+    script_dir = Path(__file__).resolve().parent
+    repo_root = script_dir.parent
+
+    candidates = [
+        repo_root / "bin" / "XGDTool",
+        repo_root / "bin" / "XGDTool.exe",
+        repo_root / "bin" / "xgdtool",
+    ]
+    for c in candidates:
+        if c.exists() and os.access(str(c), os.X_OK):
+            return str(c)
+
+    found = shutil.which("XGDTool") or shutil.which("xgdtool")
+    if found:
+        return found
+
+    return None
+
+
 BINARY = find_binary()
+XDVDFS_BIN = find_xdvdfs()
+XGDTOOL_BIN = find_xgdtool()
 
 
 # ── Temp file cleanup ─────────────────────────────────────────────────────────
@@ -238,6 +282,23 @@ def build_file_tree(entries: list[dict]) -> list[dict]:
             current = nodes[current_path]["children"]
 
     return root
+
+
+# ── XBE media patch ───────────────────────────────────────────────────────────
+
+def patch_xbe(filepath: str) -> tuple[int, int]:
+    """Apply media patch to an XBE file. Returns (old_flags, new_flags)."""
+    with open(filepath, 'r+b') as f:
+        magic = f.read(4)
+        if magic != b'XBEH':
+            raise ValueError("Not a valid XBE file (missing XBEH magic)")
+        # Media type flags live at offset 0x118 in the XBE certificate
+        f.seek(0x118)
+        media_flags = int.from_bytes(f.read(4), 'little')
+        new_flags = media_flags | 0x08
+        f.seek(0x118)
+        f.write(new_flags.to_bytes(4, 'little'))
+    return media_flags, new_flags
 
 
 # ── Routes ────────────────────────────────────────────────────────────────────
@@ -507,6 +568,340 @@ def api_rewrite():
     return jsonify({"job_id": job_id})
 
 
+# ── Tools availability ────────────────────────────────────────────────────────
+
+@app.route("/api/tools")
+def api_tools():
+    return jsonify({
+        "extract_xiso": BINARY is not None,
+        "xdvdfs": XDVDFS_BIN is not None,
+        "xgdtool": XGDTOOL_BIN is not None,
+    })
+
+
+# ── XGDTool format list ───────────────────────────────────────────────────────
+
+@app.route("/api/xgdtool/formats")
+def api_xgdtool_formats():
+    return jsonify({
+        "formats": [
+            {"id": "xiso",    "name": "XISO",    "emoji": "🎮", "desc": "Standard Xbox ISO — works everywhere"},
+            {"id": "cci",     "name": "CCI",     "emoji": "💿", "desc": "Compressed, great for OG Xbox"},
+            {"id": "cso",     "name": "CSO",     "emoji": "💨", "desc": "Smallest size, for Project Stellar"},
+            {"id": "god",     "name": "GoD",     "emoji": "🗂",  "desc": "Games on Demand format"},
+            {"id": "zar",     "name": "ZAR",     "emoji": "📦", "desc": "Archive format"},
+            {"id": "extract", "name": "Extract", "emoji": "📁", "desc": "Extract files from disc"},
+        ]
+    })
+
+
+# ── Format conversion (XGDTool) ───────────────────────────────────────────────
+
+@app.route("/api/convert", methods=["POST"])
+def api_convert():
+    if not XGDTOOL_BIN:
+        return jsonify({"error": "XGDTool not found. Run ./install.sh first."}), 500
+
+    if "file" not in request.files:
+        return jsonify({"error": "No file uploaded"}), 400
+
+    valid_formats = {"xiso", "cci", "cso", "god", "zar", "extract"}
+    output_format = request.form.get("output_format", "xiso")
+    if output_format not in valid_formats:
+        return jsonify({"error": f"Invalid output format: {output_format}"}), 400
+
+    scrub   = request.form.get("scrub", "none")
+    target  = request.form.get("target", "").strip()
+
+    img_path = save_upload(request.files["file"])
+    out_dir  = TEMP_DIR / f"convert_{uuid.uuid4()}"
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    job_id, _ = new_job()
+
+    def worker():
+        try:
+            cmd = [XGDTOOL_BIN, f"--{output_format}"]
+            if scrub == "partial":
+                cmd.append("--scrub")
+            elif scrub == "full":
+                cmd.append("--reauthor")
+            if target:
+                cmd.extend(["--target", target])
+            cmd.extend([str(img_path), str(out_dir)])
+
+            rc, _ = run_command(cmd, job_id)
+            out_files = [f for f in out_dir.rglob("*") if f.is_file()]
+
+            if rc == 0 and out_files:
+                if len(out_files) == 1:
+                    out_file = out_files[0]
+                    sz = out_file.stat().st_size
+                    finish_job(job_id, {
+                        "success": True,
+                        "download_url": f"/api/download/{out_file.name}",
+                        "filename": out_file.name,
+                        "size": human_size(sz),
+                    })
+                else:
+                    # Multiple files — zip them
+                    zip_name = f"convert_{uuid.uuid4()}.zip"
+                    zip_path = TEMP_DIR / zip_name
+                    with zipfile.ZipFile(str(zip_path), 'w', zipfile.ZIP_DEFLATED) as zf:
+                        for f in out_files:
+                            zf.write(str(f), f.relative_to(out_dir))
+                    sz = zip_path.stat().st_size
+                    finish_job(job_id, {
+                        "success": True,
+                        "download_url": f"/api/download/{zip_name}",
+                        "filename": zip_name,
+                        "size": human_size(sz),
+                    })
+            else:
+                finish_job(job_id, {"success": False, "error": "XGDTool conversion failed"}, error=True)
+        finally:
+            img_path.unlink(missing_ok=True)
+
+    threading.Thread(target=worker, daemon=True).start()
+    return jsonify({"job_id": job_id})
+
+
+# ── File injection ────────────────────────────────────────────────────────────
+
+@app.route("/api/inject", methods=["POST"])
+def api_inject():
+    if not BINARY:
+        return jsonify({"error": "extract-xiso not found. Run ./install.sh first."}), 500
+
+    if "iso" not in request.files:
+        return jsonify({"error": "No ISO file uploaded"}), 400
+    if "replacement" not in request.files:
+        return jsonify({"error": "No replacement file uploaded"}), 400
+
+    target_path = request.form.get("target_path", "").strip()
+    if not target_path:
+        return jsonify({"error": "target_path is required"}), 400
+
+    iso_orig_name = secure_filename(request.files["iso"].filename or "output.iso")
+    iso_path  = save_upload(request.files["iso"],  suffix=".iso")
+    repl_path = save_upload(request.files["replacement"])
+
+    job_id, _ = new_job()
+
+    def worker():
+        extract_dir: Optional[Path] = None
+        try:
+            q = jobs[job_id]["queue"]
+            extract_dir = TEMP_DIR / f"inject_{uuid.uuid4()}"
+            extract_dir.mkdir(parents=True, exist_ok=True)
+
+            q.put({"type": "log", "text": "Step 1/3: Extracting ISO..."})
+            rc, _ = run_command([BINARY, str(iso_path), "-d", str(extract_dir)], job_id)
+            if rc != 0:
+                finish_job(job_id, {"success": False, "error": "Extraction failed"}, error=True)
+                return
+
+            q.put({"type": "log", "text": f"Step 2/3: Injecting {target_path}..."})
+            target_full = extract_dir / target_path.lstrip("/").replace("/", os.sep)
+            target_full.parent.mkdir(parents=True, exist_ok=True)
+            orig_size = target_full.stat().st_size if target_full.exists() else 0
+            shutil.copy2(str(repl_path), str(target_full))
+            new_size = target_full.stat().st_size
+            q.put({"type": "log", "text": f"  Size: {human_size(orig_size)} → {human_size(new_size)}"})
+
+            q.put({"type": "log", "text": "Step 3/3: Repacking ISO..."})
+            out_iso_name = f"injected_{iso_orig_name}"
+            out_iso = TEMP_DIR / out_iso_name
+            rc2, _ = run_command([BINARY, "-c", str(extract_dir), str(out_iso)], job_id)
+
+            if rc2 == 0 and out_iso.exists():
+                sz = out_iso.stat().st_size
+                finish_job(job_id, {
+                    "success": True,
+                    "download_url": f"/api/download/{out_iso.name}",
+                    "filename": out_iso.name,
+                    "size": human_size(sz),
+                    "orig_size": human_size(orig_size),
+                    "new_size": human_size(new_size),
+                })
+            else:
+                finish_job(job_id, {"success": False, "error": "Repack failed"}, error=True)
+        finally:
+            iso_path.unlink(missing_ok=True)
+            repl_path.unlink(missing_ok=True)
+            if extract_dir and extract_dir.exists():
+                shutil.rmtree(str(extract_dir), ignore_errors=True)
+
+    threading.Thread(target=worker, daemon=True).start()
+    return jsonify({"job_id": job_id})
+
+
+# ── Build custom ISO (xdvdfs) ─────────────────────────────────────────────────
+
+@app.route("/api/build-custom", methods=["POST"])
+def api_build_custom():
+    if not XDVDFS_BIN:
+        return jsonify({"error": "xdvdfs not found. Run ./install.sh first."}), 500
+
+    if "files" not in request.files:
+        return jsonify({"error": "No files uploaded"}), 400
+
+    uploaded_files = request.files.getlist("files")
+    try:
+        target_paths = json.loads(request.form.get("filenames", "[]"))
+    except json.JSONDecodeError:
+        return jsonify({"error": "Invalid filenames JSON"}), 400
+
+    if len(uploaded_files) != len(target_paths):
+        return jsonify({"error": "Number of files and filenames must match"}), 400
+
+    xbe_patch = request.form.get("xbe_patch", "false").lower() == "true"
+
+    # Save all uploads to temp files before threading
+    saved: list[tuple[Path, str]] = []
+    for uf, tp in zip(uploaded_files, target_paths):
+        sp = save_upload(uf)
+        saved.append((sp, tp))
+
+    job_id, _ = new_job()
+
+    def worker():
+        src_dir: Optional[Path] = None
+        try:
+            q = jobs[job_id]["queue"]
+            src_dir = TEMP_DIR / f"build_{uuid.uuid4()}"
+            src_dir.mkdir(parents=True, exist_ok=True)
+
+            q.put({"type": "log", "text": "Step 1/3: Arranging uploaded files..."})
+            for sp, tp in saved:
+                dest = src_dir / tp.lstrip("/").replace("/", os.sep)
+                dest.parent.mkdir(parents=True, exist_ok=True)
+                shutil.move(str(sp), str(dest))
+                q.put({"type": "log", "text": f"  → {tp}"})
+
+            if xbe_patch:
+                q.put({"type": "log", "text": "Step 2/3: Applying XBE media patches..."})
+                for xbe_fp in src_dir.rglob("*.xbe"):
+                    try:
+                        old_f, new_f = patch_xbe(str(xbe_fp))
+                        q.put({"type": "log", "text": f"  Patched: {xbe_fp.name} (0x{old_f:08X} → 0x{new_f:08X})"})
+                    except ValueError as e:
+                        q.put({"type": "log", "text": f"  Skip: {xbe_fp.name} ({e})"})
+            else:
+                q.put({"type": "log", "text": "Step 2/3: Skipping XBE patch"})
+
+            q.put({"type": "log", "text": "Step 3/3: Packing ISO with xdvdfs..."})
+            out_iso = TEMP_DIR / f"custom_{uuid.uuid4()}.iso"
+            rc, _ = run_command([XDVDFS_BIN, "pack", str(src_dir), str(out_iso)], job_id)
+
+            if rc == 0 and out_iso.exists():
+                sz = out_iso.stat().st_size
+                finish_job(job_id, {
+                    "success": True,
+                    "download_url": f"/api/download/{out_iso.name}",
+                    "filename": out_iso.name,
+                    "size": human_size(sz),
+                })
+            else:
+                finish_job(job_id, {"success": False, "error": "xdvdfs pack failed"}, error=True)
+        finally:
+            if src_dir and src_dir.exists():
+                shutil.rmtree(str(src_dir), ignore_errors=True)
+            for sp, _ in saved:
+                sp.unlink(missing_ok=True)
+
+    threading.Thread(target=worker, daemon=True).start()
+    return jsonify({"job_id": job_id})
+
+
+# ── xdvdfs tree list ──────────────────────────────────────────────────────────
+
+@app.route("/api/xdvdfs/list", methods=["POST"])
+def api_xdvdfs_list():
+    if not XDVDFS_BIN:
+        return jsonify({"error": "xdvdfs not found. Run ./install.sh first."}), 500
+
+    if "iso" not in request.files:
+        return jsonify({"error": "No ISO file uploaded"}), 400
+
+    iso_path = save_upload(request.files["iso"], suffix=".iso")
+    job_id, _ = new_job()
+
+    def worker():
+        rc, lines = run_command([XDVDFS_BIN, "tree", str(iso_path)], job_id)
+        entries = []
+        for line in lines:
+            line = line.strip()
+            if not line or line.startswith('['):
+                continue
+            parts = line.split()
+            if parts:
+                path = parts[0].lstrip("/")
+                size = 0
+                if len(parts) > 1:
+                    try:
+                        size = int(parts[-1])
+                    except ValueError:
+                        pass
+                entries.append({"path": path, "size": size, "size_human": human_size(size) if size else ""})
+
+        total_size = sum(e["size"] for e in entries)
+        result = {
+            "success": rc == 0,
+            "files": entries,
+            "tree": build_file_tree(entries),
+            "total_files": len(entries),
+            "total_size": human_size(total_size),
+        }
+        if rc != 0:
+            result["error"] = "xdvdfs tree failed"
+        finish_job(job_id, result, error=(rc != 0))
+        iso_path.unlink(missing_ok=True)
+
+    threading.Thread(target=worker, daemon=True).start()
+    return jsonify({"job_id": job_id})
+
+
+# ── Standalone XBE patcher ────────────────────────────────────────────────────
+
+@app.route("/api/patch-xbe", methods=["POST"])
+def api_patch_xbe():
+    if "file" not in request.files:
+        return jsonify({"error": "No .xbe file uploaded"}), 400
+
+    xbe_orig_name = secure_filename(request.files["file"].filename or "default.xbe")
+    xbe_path = save_upload(request.files["file"], suffix=".xbe")
+    job_id, _ = new_job()
+
+    def worker():
+        try:
+            q = jobs[job_id]["queue"]
+            q.put({"type": "log", "text": f"Patching {xbe_orig_name}..."})
+            old_flags, new_flags = patch_xbe(str(xbe_path))
+            q.put({"type": "log", "text": f"  Media flags: 0x{old_flags:08X} → 0x{new_flags:08X}"})
+            q.put({"type": "log", "text": "  Patch applied successfully!"})
+
+            out_name = f"patched_{xbe_orig_name}"
+            out_path = TEMP_DIR / out_name
+            shutil.copy2(str(xbe_path), str(out_path))
+
+            finish_job(job_id, {
+                "success": True,
+                "download_url": f"/api/download/{out_name}",
+                "filename": out_name,
+                "old_flags": f"0x{old_flags:08X}",
+                "new_flags": f"0x{new_flags:08X}",
+            })
+        except (ValueError, OSError) as e:
+            jobs[job_id]["queue"].put({"type": "log", "text": f"Error: {e}"})
+            finish_job(job_id, {"success": False, "error": str(e)}, error=True)
+        finally:
+            xbe_path.unlink(missing_ok=True)
+
+    threading.Thread(target=worker, daemon=True).start()
+    return jsonify({"job_id": job_id})
+
+
 # ── Download ──────────────────────────────────────────────────────────────────
 
 @app.route("/api/download/<filename>")
@@ -530,9 +925,17 @@ def open_browser() -> None:
 
 if __name__ == "__main__":
     if BINARY:
-        print(f"[ok] Binary: {BINARY}")
+        print(f"[ok] extract-xiso: {BINARY}")
     else:
-        print("[warn] extract-xiso binary not found — run ./install.sh to build it")
+        print("[warn] extract-xiso not found — run ./install.sh to build it")
+    if XDVDFS_BIN:
+        print(f"[ok] xdvdfs: {XDVDFS_BIN}")
+    else:
+        print("[warn] xdvdfs not found — Format Converter and Custom ISO Builder unavailable")
+    if XGDTOOL_BIN:
+        print(f"[ok] XGDTool: {XGDTOOL_BIN}")
+    else:
+        print("[warn] XGDTool not found — Format Converter unavailable")
     print(f"[ok] Temp dir: {TEMP_DIR}")
     print(f"\n  Starting extract-xiso WebUI at http://localhost:{PORT}\n")
 

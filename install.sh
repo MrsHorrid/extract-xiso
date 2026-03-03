@@ -170,6 +170,118 @@ install_python_deps() {
     success "Python dependencies installed"
 }
 
+# ─── Create bin directory ─────────────────────────────────────────────────────
+create_bin_dir() {
+    step "Creating ./bin/ directory for tool binaries"
+    mkdir -p "$REPO_ROOT/bin"
+    success "bin/ directory ready"
+}
+
+# ─── Install xdvdfs ───────────────────────────────────────────────────────────
+install_xdvdfs() {
+    step "Installing xdvdfs (Xbox DVD filesystem tool)"
+
+    if [ -f "$REPO_ROOT/bin/xdvdfs" ] || [ -f "$REPO_ROOT/bin/xdvdfs.exe" ]; then
+        success "xdvdfs already in bin/"
+        return
+    fi
+
+    if command -v xdvdfs &>/dev/null; then
+        success "xdvdfs already installed: $(xdvdfs --version 2>/dev/null || echo 'found')"
+        return
+    fi
+
+    # Try via cargo
+    CARGO_INSTALLED=false
+    if command -v cargo &>/dev/null; then
+        CARGO_INSTALLED=true
+    else
+        info "Rust/cargo not found. Installing via rustup..."
+        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+        # shellcheck disable=SC1090
+        source "$HOME/.cargo/env" 2>/dev/null || export PATH="$HOME/.cargo/bin:$PATH"
+        if command -v cargo &>/dev/null; then
+            CARGO_INSTALLED=true
+        fi
+    fi
+
+    if [ "$CARGO_INSTALLED" = true ]; then
+        info "Installing xdvdfs via cargo..."
+        if cargo install xdvdfs-cli; then
+            success "xdvdfs installed via cargo"
+            return
+        else
+            warn "cargo install failed, trying prebuilt binary..."
+        fi
+    fi
+
+    # Fallback: download prebuilt binary from GitHub releases
+    info "Downloading xdvdfs prebuilt binary from GitHub..."
+    local bin_name="xdvdfs"
+    local asset_pattern=""
+    case "$OS" in
+        linux|wsl) asset_pattern="x86_64-unknown-linux" ;;
+        macos)     asset_pattern="x86_64-apple-darwin" ;;
+        windows)   bin_name="xdvdfs.exe"; asset_pattern="x86_64-pc-windows" ;;
+        *)         warn "Unknown OS — skipping xdvdfs binary download"; return ;;
+    esac
+
+    local download_url
+    download_url=$(curl -s https://api.github.com/repos/antangelo/xdvdfs/releases/latest \
+        | grep "browser_download_url" | grep "$asset_pattern" | head -1 | cut -d'"' -f4)
+
+    if [ -n "$download_url" ]; then
+        info "Downloading: $download_url"
+        curl -L -o "$REPO_ROOT/bin/$bin_name" "$download_url"
+        chmod +x "$REPO_ROOT/bin/$bin_name"
+        success "xdvdfs downloaded to bin/$bin_name"
+    else
+        warn "Could not find xdvdfs release for your OS."
+        warn "Install manually from: https://github.com/antangelo/xdvdfs/releases"
+    fi
+}
+
+# ─── Install XGDTool ──────────────────────────────────────────────────────────
+install_xgdtool() {
+    step "Installing XGDTool (Xbox game disc converter)"
+
+    local bin_name="XGDTool"
+    [ "$OS" = "windows" ] && bin_name="XGDTool.exe"
+
+    if [ -f "$REPO_ROOT/bin/$bin_name" ]; then
+        success "XGDTool already in bin/"
+        return
+    fi
+
+    if command -v XGDTool &>/dev/null; then
+        success "XGDTool already installed"
+        return
+    fi
+
+    info "Downloading XGDTool binary from GitHub..."
+    local asset_pattern=""
+    case "$OS" in
+        linux|wsl) asset_pattern="linux" ;;
+        macos)     asset_pattern="macos" ;;
+        windows)   asset_pattern="windows" ;;
+        *)         warn "Unknown OS — skipping XGDTool download"; return ;;
+    esac
+
+    local download_url
+    download_url=$(curl -s https://api.github.com/repos/wiredopposite/XGDTool/releases/latest \
+        | grep "browser_download_url" | grep -i "$asset_pattern" | head -1 | cut -d'"' -f4)
+
+    if [ -n "$download_url" ]; then
+        info "Downloading: $download_url"
+        curl -L -o "$REPO_ROOT/bin/$bin_name" "$download_url"
+        chmod +x "$REPO_ROOT/bin/$bin_name"
+        success "XGDTool downloaded to bin/$bin_name"
+    else
+        warn "Could not find XGDTool release for your OS."
+        warn "Install manually from: https://github.com/wiredopposite/XGDTool/releases"
+    fi
+}
+
 # ─── Done ─────────────────────────────────────────────────────────────────────
 print_success() {
     echo ""
@@ -192,10 +304,13 @@ print_success() {
 main() {
     banner
     detect_os
+    create_bin_dir
     install_build_deps
     build_binary
     check_python
     install_python_deps
+    install_xdvdfs
+    install_xgdtool
     print_success
 }
 
